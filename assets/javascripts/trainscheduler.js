@@ -23,7 +23,7 @@ function calcNextArrival(time, freq) {
 }
 
 function calcMinuteAway(mArrival) {
-	return(moment(mArrival).diff(moment(), 'm') + 1);	
+	return(moment(mArrival).diff(moment(), 'm'));	
 }
 
 $(document).ready(function() {
@@ -34,24 +34,26 @@ database.ref().on("child_added", function(snapshot, prevChildKey) {
 	var dest = snapshot.val().dest;
 	var firstTrainTime = snapshot.val().firstTrainTime;
 	var frequency = snapshot.val().frequency;
-	//calculate next arrival
-	var mNextArrival = calcNextArrival(firstTrainTime, frequency);
-	console.log(firstTrainTime);
-	//calculate minute away
-	var minuteAway = calcMinuteAway(mNextArrival);
+	// console.log(firstTrainTime);
 
-	updateTable(name, dest, frequency, mNextArrival, minuteAway);
+	updateTable(name, dest, firstTrainTime, frequency );
 
 });
 
-function updateTable(name, dest, freq, marrival, maway) {
+function updateTable(name, dest, firstTime, freq ) {
 	var entry;
-	var arrivalString = moment(marrival).format("h:mmA");
+	//calculate next arrival
+	var mNextArrival = calcNextArrival(firstTime, freq);
+	//calculate minute away
+	var minuteAway = calcMinuteAway(mNextArrival);
+	var arrivalString = moment(mNextArrival).format("h:mmA");
 	console.log(arrivalString);
-	entry = `<tr><td>${name}</td><td>${dest}</td><td>${freq}</td><td>${arrivalString}</td><td>${maway}</td></tr>`;
+	entry = `<tr><td>${name}</td><td>${dest}</td><td class="td-freq">${freq}</td><td class="td-arrival">${arrivalString}</td><td class="td-away">${minuteAway}</td></tr>`;
 	$('#table-schedule > tbody').append(entry);
 
 }
+
+
 
 $('#add-train-btn').on('click', function(event) {
 	event.preventDefault();
@@ -61,7 +63,6 @@ $('#add-train-btn').on('click', function(event) {
 	var firstTrainTime;
 	var frequency;
 	var entry;
-	var mNextArrival;
 
 	name = $('#train-name-input').val().trim();
 	dest = $('#train-dest-input').val().trim();
@@ -71,9 +72,6 @@ $('#add-train-btn').on('click', function(event) {
 	console.log(dest);
 	console.log(firstTrainTime);
 	console.log(frequency);
-//	//calculate next arrival
-//	mNextArrival = calcNextArrival(firstTrainTime, frequency);
-	//calculate minute away
 	//add to firebase
 	var newTrain = {
 		name: name,
@@ -82,14 +80,33 @@ $('#add-train-btn').on('click', function(event) {
 		frequency: frequency
 	};
 	database.ref().push(newTrain);
-
-
-
-
 }); //on click add train
- 
 
+function updateRowTable() {
+	var rowCount = $('#table-schedule >tbody >tr').length;
+	$('#table-schedule >tbody >tr').each(function() {
+		//update minute away every minute
+		var away = $(this).find(".td-away").html();
+		//check if <0
+		if (away > 0) {
+			$(this).find(".td-away").html(--away);
+		}
+		else {
+			//reset minute away
+			var freq = $(this).find(".td-freq").html();
+			$(this).find(".td-away").html(freq);
+			//get new arrival time
+			var arrival = $(this).find(".td-arrival").html();
+			var mNextArrival = calcNextArrival(arrival, freq);
+			$(this).find(".td-arrival").html(moment(mNextArrival).format("h:mmA"));
+		}
 
+//		console.log(away);
+	});
+}
+
+//update table periodically
+var interval = setInterval(updateRowTable, 1000);
 
 
 
