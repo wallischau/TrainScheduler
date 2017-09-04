@@ -13,13 +13,18 @@ database = firebase.database();
 
 function calcNextArrival(time, freq) {
 	//get time info
-	var mTime = moment(time,'H HH');	
-	console.log(time);
-	console.log(moment(mTime).get('hour'));
-	console.log(moment(mTime).get('minute'));
-	return(mTime.add(freq, 'm'));
+	var mTime = moment(time,'H:mm');	
+	console.log(moment(mTime).format('h:mm'));
+	//check if it is past
+	while (mTime.diff(moment(), 'm') <= 0) {
+		mTime.add(freq, 'm');
+	}
+	return mTime;
 }
 
+function calcMinuteAway(mArrival) {
+	return(moment(mArrival).diff(moment(), 'm') + 1);	
+}
 
 $(document).ready(function() {
 
@@ -31,16 +36,19 @@ database.ref().on("child_added", function(snapshot, prevChildKey) {
 	var frequency = snapshot.val().frequency;
 	//calculate next arrival
 	var mNextArrival = calcNextArrival(firstTrainTime, frequency);
+	console.log(firstTrainTime);
+	//calculate minute away
+	var minuteAway = calcMinuteAway(mNextArrival);
 
-	updateTable(name, dest, firstTrainTime, frequency, mNextArrival);
+	updateTable(name, dest, frequency, mNextArrival, minuteAway);
 
 });
 
-function updateTable(name, dest, time, freq, arrival) {
+function updateTable(name, dest, freq, marrival, maway) {
 	var entry;
-	var arrivalString = moment(arrival).format("h:mm");
+	var arrivalString = moment(marrival).format("h:mmA");
 	console.log(arrivalString);
-	entry = `<tr><td>${name}</td><td>${dest}</td><td>${freq}</td><td>${time}</td><td>0</td></tr>`;
+	entry = `<tr><td>${name}</td><td>${dest}</td><td>${freq}</td><td>${arrivalString}</td><td>${maway}</td></tr>`;
 	$('#table-schedule > tbody').append(entry);
 
 }
