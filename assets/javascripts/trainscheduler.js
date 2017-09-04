@@ -17,6 +17,7 @@ function calcNextArrival(time, freq) {
 	console.log(time);
 	console.log(moment(mTime).get('hour'));
 	console.log(moment(mTime).get('minute'));
+	return(mTime.add(freq, 'm'));
 }
 
 
@@ -28,13 +29,18 @@ database.ref().on("child_added", function(snapshot, prevChildKey) {
 	var dest = snapshot.val().dest;
 	var firstTrainTime = snapshot.val().firstTrainTime;
 	var frequency = snapshot.val().frequency;
-	updateTable(name, dest, firstTrainTime, frequency);
+	//calculate next arrival
+	var mNextArrival = calcNextArrival(firstTrainTime, frequency);
+
+	updateTable(name, dest, firstTrainTime, frequency, mNextArrival);
 
 });
 
-function updateTable(name, dest, time, freq) {
+function updateTable(name, dest, time, freq, arrival) {
 	var entry;
-	entry = `<tr><td>${name}</td><td>${dest}</td><td>${freq}</td><td>${time}</td><td>0</)td></tr>`;
+	var arrivalString = moment(arrival).format("h:mm");
+	console.log(arrivalString);
+	entry = `<tr><td>${name}</td><td>${dest}</td><td>${freq}</td><td>${time}</td><td>0</td></tr>`;
 	$('#table-schedule > tbody').append(entry);
 
 }
@@ -47,7 +53,7 @@ $('#add-train-btn').on('click', function(event) {
 	var firstTrainTime;
 	var frequency;
 	var entry;
-	var nextArrival;
+	var mNextArrival;
 
 	name = $('#train-name-input').val().trim();
 	dest = $('#train-dest-input').val().trim();
@@ -57,11 +63,9 @@ $('#add-train-btn').on('click', function(event) {
 	console.log(dest);
 	console.log(firstTrainTime);
 	console.log(frequency);
-	//calculate next arrival
-	nextArrival = calcNextArrival(firstTrainTime, frequency);
+//	//calculate next arrival
+//	mNextArrival = calcNextArrival(firstTrainTime, frequency);
 	//calculate minute away
-	//display to table
-	updateTable(name, dest, firstTrainTime, frequency);
 	//add to firebase
 	var newTrain = {
 		name: name,
