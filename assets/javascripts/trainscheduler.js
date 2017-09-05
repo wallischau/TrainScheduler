@@ -1,5 +1,10 @@
+/* Title: Train scheduler                                   */
+/* Author: Wallis Chau                                      */
+/* Description: Display train schedules and option          */
+/*              to add new train schedule                   */
+/* Date: 9/2/17                                             */
 
-  // Initialize Firebase
+// Initialize Firebase
 var config = {
     apiKey: "AIzaSyAqxLO_HHbKmagtxzq1Bcqzgasv8LTg-x4",
     authDomain: "train-scheduler-65acd.firebaseapp.com",
@@ -11,20 +16,29 @@ var config = {
 firebase.initializeApp(config);
 database = firebase.database();
 
+/* calcNextArrival                                 */
+/* Description: calculate next arrival time        */
+/* parameter: time - time of first train           */
+/*            freq - how often the train comes     */
+/* return:    moment object of next arrival        */
 function calcNextArrival(time, freq) {
 	//get time info
 	var mTime = moment(time,'H:mm');	
 	console.log(moment(mTime).format('h:mm'));
-	//check if it is past
+	//check if it has past, if yes, set new time
 	while (mTime.diff(moment(), 'm') <= 0) {
 		mTime.add(freq, 'm');
 	}
 	return mTime;
 }
 
+/* calMinuteAway                                       */
+/* Description: calculate minutes before train arrives */
+/* return: minutes                                     */
 function calcMinuteAway(mArrival) {
 	return(moment(mArrival).diff(moment(), 'm'));	
 }
+
 
 $(document).ready(function() {
 
@@ -35,11 +49,15 @@ database.ref().on("child_added", function(snapshot, prevChildKey) {
 	var firstTrainTime = snapshot.val().firstTrainTime;
 	var frequency = snapshot.val().frequency;
 	// console.log(firstTrainTime);
-
+	//display table of schedule from database
 	updateTable(name, dest, firstTrainTime, frequency );
 
 });
 
+/* undateTable                                          */
+/* Description: display schedule in table row           */
+/* parameter: name, dest, firstTime, freq  - details to */
+/*            display                                   */
 function updateTable(name, dest, firstTime, freq ) {
 	var entry;
 	//calculate next arrival
@@ -47,17 +65,16 @@ function updateTable(name, dest, firstTime, freq ) {
 	//calculate minute away
 	var minuteAway = calcMinuteAway(mNextArrival);
 	var arrivalString = moment(mNextArrival).format("h:mmA");
-	console.log(arrivalString);
+	// console.log(arrivalString);
 	entry = `<tr><td>${name}</td><td>${dest}</td><td class="td-freq">${freq}</td><td class="td-arrival">${arrivalString}</td><td class="td-away">${minuteAway}</td></tr>`;
 	$('#table-schedule > tbody').append(entry);
 
 }
 
-
-
+//add train button click
 $('#add-train-btn').on('click', function(event) {
 	event.preventDefault();
-//take user input
+	//take user input
 	var name;
 	var dest;
 	var firstTrainTime;
@@ -68,10 +85,6 @@ $('#add-train-btn').on('click', function(event) {
 	dest = $('#train-dest-input').val().trim();
 	firstTrainTime = $('#train-time-input').val().trim();
 	frequency = parseInt($('#train-freq-input').val().trim());
-	console.log(name);
-	console.log(dest);
-	console.log(firstTrainTime);
-	console.log(frequency);
 	//add to firebase
 	var newTrain = {
 		name: name,
@@ -82,6 +95,8 @@ $('#add-train-btn').on('click', function(event) {
 	database.ref().push(newTrain);
 }); //on click add train
 
+/* undateRowTable                                    */
+/* Description: update arrival time and minutes away */
 function updateRowTable() {
 	var rowCount = $('#table-schedule >tbody >tr').length;
 	$('#table-schedule >tbody >tr').each(function() {
@@ -100,14 +115,10 @@ function updateRowTable() {
 			var mNextArrival = calcNextArrival(arrival, freq);
 			$(this).find(".td-arrival").html(moment(mNextArrival).format("h:mmA"));
 		}
-
-//		console.log(away);
-	});
+	}); //tr .each
 }
 
 //update table periodically
-var interval = setInterval(updateRowTable, 1000);
-
-
+var interval = setInterval(updateRowTable, 60000);
 
 }); //ready
